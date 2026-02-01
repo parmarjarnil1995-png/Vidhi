@@ -15,7 +15,6 @@
       --muted:#8b8b8b;
       --yesScale:1;
     }
-
     *{box-sizing:border-box}
     body{
       margin:0;
@@ -27,7 +26,6 @@
       place-items:center;
       overflow-x:hidden;
     }
-
     .card{
       position:relative;
       width:min(720px,92vw);
@@ -37,13 +35,7 @@
       box-shadow:0 10px 30px rgba(0,0,0,.08),0 2px 10px rgba(0,0,0,.04);
       text-align:center;
     }
-
-    .sticker{
-      font-size:54px;line-height:1;display:inline-block;
-      filter:drop-shadow(0 2px 2px rgba(0,0,0,.12));
-      margin-bottom:.4rem;user-select:none;
-    }
-
+    .sticker{font-size:54px;line-height:1;display:inline-block;filter:drop-shadow(0 2px 2px rgba(0,0,0,.12));margin-bottom:.4rem;user-select:none}
     h1{margin:.2rem 0 1.2rem;font-size:clamp(1.4rem,4.2vw,2.2rem);font-weight:750}
 
     .buttons{
@@ -51,3 +43,176 @@
       margin-top:.6rem;
       min-height:140px;
       display:flex;justify-content:center;align-items:center;
+    }
+    button{
+      border:0;
+      font-size:clamp(1rem,3.6vw,1.25rem);
+      padding:.95rem 1.4rem;
+      border-radius:999px;
+      cursor:pointer;
+      transition:background .12s ease, box-shadow .12s ease, transform .1s ease;
+      user-select:none;touch-action:none;
+    }
+    #yesBtn{
+      background:var(--accent);color:#fff;font-weight:750;
+      box-shadow:0 8px 18px rgba(255,77,109,.32);
+      z-index:3;
+      transform:scale(var(--yesScale));
+    }
+    #yesBtn:hover{background:var(--accent-dark);transform:translateY(-1px) scale(calc(var(--yesScale)*1.03))}
+    #yesBtn:active{transform:translateY(1px) scale(calc(var(--yesScale)*.99))}
+    #noBtn{
+      position:absolute;left:62%;top:12px;
+      background:#eee;color:var(--muted);font-weight:650;
+      padding:.6rem .9rem;box-shadow:0 4px 10px rgba(0,0,0,.08);z-index:2;
+    }
+    .hint{margin-top:.6rem;font-size:.9rem;color:#7a7a7a;font-style:italic;user-select:none}
+
+    .celebration h2{font-size:clamp(1.6rem,5vw,2.3rem);margin:.4rem 0 1rem}
+
+    .heart{
+      position:fixed;bottom:-40px;font-size:20px;animation:floatUp linear forwards;opacity:.9;
+      filter:drop-shadow(0 2px 2px rgba(0,0,0,.15));z-index:50;pointer-events:none;
+    }
+    @keyframes floatUp{to{transform:translateY(-120vh) translateX(var(--drift,0px)) rotate(23deg);opacity:0}}
+    #confetti-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:40}
+
+    /* Pop-up */
+    #popup{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.35);z-index:70}
+    #popup.show{display:grid}
+    #popup .box{
+      background:#fff;padding:1.6rem 1.2rem;border-radius:18px;
+      width:min(640px,92vw);text-align:center;
+      box-shadow:0 24px 60px rgba(0,0,0,.25);
+      transform:scale(.86);animation:pop .28s ease-out forwards;
+    }
+    #popup h3{margin:0 0 .6rem;font-size:clamp(1.4rem,4.8vw,2.2rem)}
+    #popup p{margin:.2rem 0 .4rem;font-size:clamp(1rem,3.4vw,1.2rem)}
+    @keyframes pop{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:scale(1)}}
+    #closePopup{margin-top:.8rem;background:var(--accent);color:#fff;padding:.7rem 1.2rem;border-radius:999px;border:0;cursor:pointer;font-weight:700}
+  </style>
+</head>
+<body>
+
+  <main class="card" id="card" role="main">
+    <div class="sticker" aria-hidden="true">🐱‍❤️‍👤</div>
+    <h1><span id="who">Vidhi</span>, will you be my Valentine?</h1>
+
+    <div class="buttons" id="buttons">
+      <button id="yesBtn" aria-label="Yes, of course">Yes</button>
+      <button id="noBtn" aria-label="No">No</button>
+      <div class="hint">“No” seems a bit shy</div>
+    </div>
+
+    <section id="celebrate" class="celebration" hidden>
+      <h2>Yayyy! Jarnil loves you infinitely. My forever Valentine! ❤️‍🔥😘💋❤️</h2>
+    </section>
+  </main>
+
+  <!-- Pop-up after Yes -->
+  <section id="popup" aria-live="polite">
+    <div class="box">
+      <h3>Yayyy!</h3>
+      <p>Jarnil loves you infinitely.</p>
+      <p>My forever Valentine! ❤️‍🔥😘💋❤️</p>
+      <button id="closePopup">Aww, thank you</button>
+    </div>
+  </section>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Tiny canvas confetti -->
+  <script>
+    (function(){
+      const canvas=document.getElementById('confetti-canvas');
+      const ctx=canvas.getContext('2d');let W,H,pieces=[],running=false;
+      function resize(){W=canvas.width=innerWidth;H=canvas.height=innerHeight}
+      addEventListener('resize',resize);resize();
+      function spawn(n=180){
+        for(let i=0;i<n;i++){
+          pieces.push({x:Math.random()*W,y:-10,w:6+Math.random()*6,h:10+Math.random()*10,
+            vy:2+Math.random()*3.5,vx:-2+Math.random()*4,rot:Math.random()*Math.PI,
+            vr:-.2+Math.random()*.4,color:`hsl(${Math.floor(Math.random()*360)},90%,60%)`,life:220+Math.random()*80});
+        }
+        if(!running){running=true;requestAnimationFrame(loop)}
+      }
+      function loop(){
+        ctx.clearRect(0,0,W,H);
+        pieces=pieces.filter(p=>p.life>0&&p.y<H+40);
+        for(const p of pieces){p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life-=1;
+          ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+          ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();}
+        if(pieces.length)requestAnimationFrame(loop);else running=false;
+      }
+      window.fireConfetti=()=>{spawn(200);setTimeout(()=>spawn(160),260);}
+    })();
+  </script>
+
+  <script>
+    // Keep name consistent; allow ?name= override
+    const defaultName='Vidhi';
+    const urlName=new URLSearchParams(location.search).get('name');
+    const clean=(s)=>s?String(s).replace(/[<>]/g,'').trim():'';
+    const finalName=clean(urlName)||defaultName;
+    document.getElementById('who').textContent=finalName;
+    document.title=`${finalName}, will you be my Valentine?`;
+
+    const yesBtn=document.getElementById('yesBtn');
+    const noBtn=document.getElementById('noBtn');
+    const buttons=document.getElementById('buttons');
+    const celebrate=document.getElementById('celebrate');
+    const popup=document.getElementById('popup');
+    const closePopup=document.getElementById('closePopup');
+
+    let yesScale=1; const maxScale=4.4;
+    function setYesScale(s){ yesScale=Math.min(s,maxScale); document.documentElement.style.setProperty('--yesScale',yesScale); }
+    function growYes(){
+      const next = yesScale < 2 ? yesScale*1.25 + 0.05 : yesScale*1.12 + 0.02;
+      setYesScale(next);
+    }
+    function moveNo(){
+      const wrap=buttons.getBoundingClientRect(), b=noBtn.getBoundingClientRect(), pad=6;
+      const maxL=wrap.width-b.width-pad, maxT=wrap.height-b.height-pad;
+      noBtn.style.left=Math.max(pad,Math.random()*maxL)+'px';
+      noBtn.style.top =Math.max(pad,Math.random()*maxT)+'px';
+      noBtn.animate([{transform:'translateY(0)'},{transform:'translateY(-4px)'},{transform:'translateY(0)'}],{duration:160,easing:'ease-out'});
+      growYes();
+    }
+    ['pointerover','pointerdown','pointerup','click','mouseenter','focus'].forEach(t=>{
+      noBtn.addEventListener(t,(e)=>{e.preventDefault();e.stopPropagation();moveNo();return false;},{capture:true});
+    });
+    noBtn.addEventListener('touchstart',(e)=>{e.preventDefault();moveNo();},{passive:false});
+    noBtn.tabIndex=-1;
+
+    function showPopup(){popup.classList.add('show')}
+    function hidePopup(){popup.classList.remove('show')}
+    closePopup.addEventListener('click',hidePopup);
+    popup.addEventListener('click',(e)=>{if(e.target===popup)hidePopup()});
+
+    yesBtn.addEventListener('click',()=>{
+      buttons.hidden=true;
+      celebrate.hidden=false;
+      if(window.fireConfetti) window.fireConfetti();
+
+      const emojis=['💖','💗','💓','💕','💞','💘','❤️','🩷'];
+      const end=Date.now()+2200;
+      const timer=setInterval(()=>{
+        for(let i=0;i<8;i++){
+          const h=document.createElement('div');
+          h.className='heart';
+          h.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+          h.style.left=Math.random()*100+'vw';
+          h.style.setProperty('--drift',(Math.random()*100-50)+'px');
+          h.style.animationDuration=(3+Math.random()*2.5)+'s';
+          h.style.fontSize=(18+Math.random()*22)+'px';
+          document.body.appendChild(h);
+          setTimeout(()=>h.remove(),6000);
+        }
+        if(Date.now()>end) clearInterval(timer);
+      },180);
+
+      showPopup();
+    });
+  </script>
+</body>
+</html>
