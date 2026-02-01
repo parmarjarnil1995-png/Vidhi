@@ -41,7 +41,13 @@
     .buttons{
       position:relative;
       margin-top:.6rem;
-      min-height:140px;
+      min-height:160px;
+      display:flex;justify-content:center;align-items:center;flex-direction:column;
+    }
+    .btn-row{
+      position:relative;
+      width:100%;
+      min-height:110px;
       display:flex;justify-content:center;align-items:center;
     }
     button{
@@ -66,7 +72,16 @@
       background:#eee;color:var(--muted);font-weight:650;
       padding:.6rem .9rem;box-shadow:0 4px 10px rgba(0,0,0,.08);z-index:2;
     }
-    .hint{margin-top:.6rem;font-size:.9rem;color:#7a7a7a;font-style:italic;user-select:none}
+
+    /* Funny rotating hint */
+    .hint{
+      margin-top:.8rem;
+      font-size:.95rem;
+      color:#6a6a6a;
+      font-style:italic;
+      user-select:none;
+      min-height:1.2em;
+    }
 
     .celebration h2{font-size:clamp(1.6rem,5vw,2.3rem);margin:.4rem 0 1rem}
 
@@ -99,9 +114,11 @@
     <h1><span id="who">Vidhi</span>, will you be my Valentine?</h1>
 
     <div class="buttons" id="buttons">
-      <button id="yesBtn" aria-label="Yes, of course">Yes</button>
-      <button id="noBtn" aria-label="No">No</button>
-      <div class="hint">“No” seems a bit shy</div>
+      <div class="btn-row">
+        <button id="yesBtn" aria-label="Yes, of course">Yes</button>
+        <button id="noBtn" aria-label="No">No</button>
+      </div>
+      <div class="hint" id="hint">No is not an option.</div>
     </div>
 
     <section id="celebrate" class="celebration" hidden>
@@ -164,6 +181,25 @@
     const popup=document.getElementById('popup');
     const closePopup=document.getElementById('closePopup');
 
+    // Funny rotating messages
+    const hintEl=document.getElementById('hint');
+    const messages=[
+      'No is not an option.',
+      'Do. Not. Click. No.',
+      'Careful… the No button bites.',
+      'Nice try. Yes only.',
+      'If you click No, I will tell your mum.',
+      'Pssst… the Yes button gives chocolates.',
+      'Warning: No causes immediate guilt.',
+      'Click Yes or I am taking the last momo.'
+    ];
+    let mIndex=0;
+    setInterval(()=>{
+      mIndex=(mIndex+1)%messages.length;
+      hintEl.textContent=messages[mIndex];
+    },2200);
+
+    // Yes growth + No runaway
     let yesScale=1; const maxScale=4.4;
     function setYesScale(s){ yesScale=Math.min(s,maxScale); document.documentElement.style.setProperty('--yesScale',yesScale); }
     function growYes(){
@@ -171,7 +207,8 @@
       setYesScale(next);
     }
     function moveNo(){
-      const wrap=buttons.getBoundingClientRect(), b=noBtn.getBoundingClientRect(), pad=6;
+      const wrap=buttons.querySelector('.btn-row').getBoundingClientRect();
+      const b=noBtn.getBoundingClientRect(); const pad=6;
       const maxL=wrap.width-b.width-pad, maxT=wrap.height-b.height-pad;
       noBtn.style.left=Math.max(pad,Math.random()*maxL)+'px';
       noBtn.style.top =Math.max(pad,Math.random()*maxT)+'px';
@@ -184,11 +221,13 @@
     noBtn.addEventListener('touchstart',(e)=>{e.preventDefault();moveNo();},{passive:false});
     noBtn.tabIndex=-1;
 
+    // Pop-up wiring
     function showPopup(){popup.classList.add('show')}
     function hidePopup(){popup.classList.remove('show')}
     closePopup.addEventListener('click',hidePopup);
     popup.addEventListener('click',(e)=>{if(e.target===popup)hidePopup()});
 
+    // Yes click celebrations
     yesBtn.addEventListener('click',()=>{
       buttons.hidden=true;
       celebrate.hidden=false;
@@ -216,3 +255,4 @@
   </script>
 </body>
 </html>
+``
