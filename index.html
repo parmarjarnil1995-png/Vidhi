@@ -1,1 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Will you be my Valentine?</title>
 
+  <!-- Colour palette and basic styles -->
+  <style>
+    :root {
+      --bg: #fde8ef;           /* page background */
+      --card: #fff;
+      --text: #1c1c1c;
+      --accent: #ff4d6d;       /* yes button */
+      --accent-dark: #e23c5a;
+      --muted: #8b8b8b;        /* no button */
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+                   "Segoe UI Emoji", "Segoe UI Symbol";
+      background: radial-gradient(1200px 800px at 20% -10%, #ffd4e1 0%, transparent 70%) var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      overflow-x: hidden;
+    }
+
+    .card {
+      position: relative;
+      width: min(720px, 92vw);
+      padding: 2.2rem 1.6rem 2.6rem;
+      background: var(--card);
+      border-radius: 20px;
+      box-shadow:
+        0 10px 30px rgba(0,0,0,0.08),
+        0 2px 10px rgba(0,0,0,0.04);
+      text-align: center;
+    }
+
+    .sticker {
+      font-size: 54px;
+      line-height: 1;
+      display: inline-block;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.12));
+      margin-bottom: 0.4rem;
+      user-select: none;
+    }
+
+    h1 {
+      margin: 0.2rem 0 1.2rem;
+      font-size: clamp(1.4rem, 4.2vw, 2.2rem);
+      font-weight: 750;
+    }
+
+    .buttons {
+      position: relative;
+      margin-top: 0.6rem;
+      min-height: 96px; /* space for the runaway button to move around */
+    }
+
+    button {
+      border: 0;
+      font-size: clamp(1rem, 3.6vw, 1.25rem);
+      padding: 0.95rem 1.4rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .12s ease, background .12s ease;
+      will-change: transform, left, top;
+      user-select: none;
+      touch-action: none;
+    }
+
+    #yesBtn {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 750;
+      box-shadow: 0 8px 18px rgba(255,77,109,0.32);
+    }
+    #yesBtn:hover { transform: translateY(-1px) scale(1.03); background: var(--accent-dark); }
+    #yesBtn:active { transform: translateY(1px) scale(0.99); }
+
+    #noBtn {
+      position: absolute;
+      left: 62%;
+      top: 10px;
+      background: #eee;
+      color: var(--muted);
+      font-weight: 650;
+      padding: 0.6rem 0.9rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    }
+
+    .hint {
+      margin-top: 0.6rem;
+      font-size: 0.9rem;
+      color: #7a7a7a;
+      font-style: italic;
+      user-select: none;
+    }
+
+    /* Celebration state */
+    .celebration h2 {
+      font-size: clamp(1.6rem, 5vw, 2.3rem);
+      margin: 0.4rem 0 1rem;
+    }
+
+    .gif {
+      display: none;
+      width: min(360px, 80%);
+      height: auto;
+      border-radius: 14px;
+      margin: 1rem auto 0.4rem;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+    }
+
+    /* Floating hearts animation */
+    .heart {
+      position: fixed;
+      bottom: -40px;
+      font-size: 20px;
+      animation: floatUp linear forwards;
+      opacity: 0.9;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.15));
+      z-index: 50;
+      pointer-events: none;
+    }
+    @keyframes floatUp {
+      to {
+        transform: translateY(-120vh) translateX(var(--drift, 0px)) rotate(23deg);
+        opacity: 0;
+      }
+    }
+
+    /* Canvas for confetti sits over content */
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 40;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="card" id="card">
+    <div class="sticker" aria-hidden="true">🐱‍❤️‍👤</div>
+    <h1>
+      <span id="who">Hey</span>, will you be my Valentine?
+    </h1>
+
+    <div class="buttons" id="buttons">
+      <button id="yesBtn" aria-label="Yes, of course">Yes</button>
+      <button id="noBtn" aria-label="No">No</button>
+      <div class="hint">“No” seems a bit shy</div>
+    </div>
+
+    <section id="celebrate" class="celebration" hidden>
+      <h2>Yay! You said Yes 🎉</h2>
+      <p>Best decision ever.</p>
+      <!-- Optional: add a GIF named celebration.gif in your repo root -->
+      celebration.gif
+    </section>
+  </main>
+
+  <!-- Confetti canvas -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- Optional tiny confetti helper (embedded, no external files needed) -->
+  <script>
+    // Minimal confetti using the canvas; adapted for a tiny footprint
+    // Creates rectangles that fall like confetti. Not a full library but looks festive.
+    (function () {
+      const canvas = document.getElementById('confetti-canvas');
+      const ctx = canvas.getContext('2d');
+      let W, H, pieces = [], running = false, rafId;
+
+      function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize); resize();
+
+      function spawnBurst(count = 180) {
+        for (let i = 0; i < count; i++) {
+          pieces.push({
+            x: Math.random() * W,
+            y: -10,
+            w: 6 + Math.random() * 6,
+            h: 10 + Math.random() * 10,
+            vy: 2 + Math.random() * 3.5,
+            vx: -2 + Math.random() * 4,
+            rot: Math.random() * Math.PI,
+            vr: -0.2 + Math.random() * 0.4,
+            color: `hsl(${Math.floor(Math.random()*360)},90%,60%)`,
+            life: 220 + Math.random()*80
+          });
+        }
+        if (!running) { running = true; loop(); }
+      }
+
+      function loop() {
+        ctx.clearRect(0,0,W,H);
+        pieces = pieces.filter(p => p.life > 0 && p.y < H + 40);
+        for (const p of pieces) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rot += p.vr;
+          p.life -= 1;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+          ctx.restore();
+        }
+        if (pieces.length) rafId = requestAnimationFrame(loop);
+        else running = false;
+      }
+
+      window.simpleConfetti = () => {
+        spawnBurst(200);
+        setTimeout(() => spawnBurst(160), 260);
+      };
+    })();
+  </script>
+
+  <script>
+    // Helper: get a URL parameter
+    function getParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    // Personalise the greeting using ?name=Nirali in the URL
+    const whoEl = document.getElementById('who');
+    const person = getParam('name');
+    if (person) {
+      try {
+        // Basic sanitising to avoid script injection in the name
+        const clean = person.replace(/[<>]/g, '').trim();
+        whoEl.textContent = clean;
+      } catch {
+        whoEl.textContent = person;
+      }
+    } else {
+      whoEl.textContent = 'Hey';
+    }
+
+    const card = document.getElementById('card');
+    const yesBtn = document.getElementById('yesBtn');
+    const noBtn = document.getElementById('noBtn');
+    const buttonsWrap = document.getElementById('buttons');
+    const celebrate = document.getElementById('celebrate');
+    const gif = document.getElementById('celebrationGif');
+
+    // Make the “No” button impossible to choose by running away on hover, focus, or touch
+    function moveNoButton(ev) {
+      const wrapRect = buttonsWrap.getBoundingClientRect();
+      const btnRect = noBtn.getBoundingClientRect();
+      const padding = 6;
+
+      // Compute a new random position that stays inside the buttons area
+      const maxLeft = wrapRect.width - btnRect.width - padding;
+      const maxTop  = wrapRect.height - btnRect.height - padding;
+
+      const newLeft = Math.max(padding, Math.random() * maxLeft);
+      const newTop  = Math.max(padding, Math.random() * maxTop);
+
+      noBtn.style.left = `${newLeft}px`;
+      noBtn.style.top = `${newTop}px`;
+
+      // Add a tiny wiggle
+      noBtn.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(-4px)' }, { transform: 'translateY(0)'}],
+                    { duration: 160, easing: 'ease-out' });
+    }
+
+    // Intercept every attempt to interact with “No”
+    ['pointerover', 'pointerdown', 'pointerup', 'click', 'mouseenter', 'focus'].forEach(type => {
+      noBtn.addEventListener(type, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        moveNoButton(e);
+        return false;
+      }, { capture: true });
+    });
+
+    // Mobile: move on touch
+    noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveNoButton(e); }, { passive: false });
+
+    // Ensure it is skipped in keyboard tab order
+    noBtn.tabIndex = -1;
+
+    // When “Yes” is clicked, switch to celebration view, show GIF, and fire confetti and hearts
+    yesBtn.addEventListener('click', () => {
+      buttonsWrap.hidden = true;
+      celebrate.hidden = false;
+
+      // Show GIF if present in the repo (file name: celebration.gif)
+      gif.addEventListener('error', () => { gif.style.display = 'none'; });
+      gif.addEventListener('load',  () => { gif.style.display = 'block'; });
+
+      // Fire confetti
+      if (window.simpleConfetti) window.simpleConfetti();
+
+      // Release floating hearts for a couple of seconds
+      const heartEmojis = ['💖','💗','💓','💕','💞','💘','❤️','🩷'];
+      const endAt = Date.now() + 2200;
+      const heartTimer = setInterval(() => {
+        for (let i = 0; i < 8; i++) {
+          const h = document.createElement('div');
+          h.className = 'heart';
+          h.textContent = heartEmojis[Math.floor(Math.random()*heartEmojis.length)];
+          h.style.left = Math.random() * 100 + 'vw';
+          h.style.setProperty('--drift', (Math.random() * 100 - 50) + 'px');
+          h.style.animationDuration = (3 + Math.random()*2.5) + 's';
+          h.style.fontSize = (18 + Math.random()*22) + 'px';
+          document.body.appendChild(h);
+          // Clean up after animation
+          setTimeout(() => h.remove(), 6000);
+        }
+        if (Date.now() > endAt) clearInterval(heartTimer);
+      }, 180);
+    });
+  </script>
+</body>
+</html>
